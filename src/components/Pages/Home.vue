@@ -37,7 +37,7 @@ const toggleCategory = (category) => {
                                 I'm always learning new things. Technology changes fast,
                                 so I keep my skills up to date.
                             </p>
-                            <a href="https://drive.google.com/file/d/14njUlPRIi7rGIHzGh6WqVbe9rgg8SoM7/view?usp=sharing" target="_blank" class="section-link">See My Resume →</a>
+                            <a href="https://drive.google.com/file/d/1o2sG8T2xMICJqIggt7-Jo1HuMQtc0wSq/view?usp=sharing" target="_blank" class="section-link">See My Resume →</a>
                         </div>
                     </transition>
                 </div>
