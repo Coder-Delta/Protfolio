@@ -36,3 +36,8 @@ bun dev
 ```sh
 bun run build
 ```
+### Live Demo
+
+```sh
+https://protfolio-beta-one.vercel.app/
+```
