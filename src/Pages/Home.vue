@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import Navbar from '../Navbar.vue';
+import Navbar from '@/components/Navbar.vue';
 import '@picocss/pico';
 
 const activeCategory = ref(null);
@@ -24,7 +24,7 @@ const toggleCategory = (category) => {
                                 I build applications using modern web technologies.
                                 I focus on writing clean code that works well.
                             </p>
-                            <a href="https://github.com/Coder-Delta" target="_blank" class="section-link">Explore My Projects →</a>
+                            <a href="/projects" class="section-link">Explore My Projects →</a>
                         </div>
                     </transition>
                 </div>

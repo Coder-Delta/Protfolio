@@ -3,6 +3,7 @@ import '@picocss/pico'
 import githubIcon from '@/assets/icon/github.svg';
 import linkedinIcon from '@/assets/icon/linkedin.svg';
 import gmailIcon from '@/assets/icon/gmail.svg';
+import mediumIcon from '@/assets/icon/medium.svg';
 </script>
 
 <template>
@@ -17,17 +18,22 @@ import gmailIcon from '@/assets/icon/gmail.svg';
             </ul>
             <ul>
                 <li style="animation-delay: 0s">
-                    <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                    <a href="https://github.com/Coder-Delta" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                         <img :src="githubIcon" alt="Github" class="nav-icon" />
                     </a>
                 </li>
                 <li style="animation-delay: 0.1s">
-                    <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                    <a href="https://linkedin.com/in/ranjit-kumar-702054258" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
                         <img :src="linkedinIcon" alt="LinkedIn" class="nav-icon" />
                     </a>
                 </li>
                 <li style="animation-delay: 0.2s">
-                    <a href="mailto:your@email.com" aria-label="Email">
+                    <a href="https://medium.com/@ranjitbhandary15" target="_blank" rel="noopener noreferrer" aria-label="Medium">
+                        <img :src="mediumIcon" alt="Medium" class="nav-icon" />
+                    </a>
+                </li>
+                <li style="animation-delay: 0.3s">
+                    <a href="mailto:ranjitbhandary15@gmail.com" aria-label="Email">
                         <img :src="gmailIcon" alt="Gmail" class="nav-icon" />
                     </a>
                 </li>
