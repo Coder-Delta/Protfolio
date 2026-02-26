@@ -28,7 +28,7 @@ import mediumIcon from '@/assets/icon/medium.svg';
                     </a>
                 </li>
                 <li style="animation-delay: 0.2s">
-                    <a href="https://medium.com/@ranjitbhandary15" target="_blank" rel="noopener noreferrer" aria-label="Medium">
+                    <a href="https://medium.com/@ezrajedi" target="_blank" rel="noopener noreferrer" aria-label="Medium">
                         <img :src="mediumIcon" alt="Medium" class="nav-icon" />
                     </a>
                 </li>
