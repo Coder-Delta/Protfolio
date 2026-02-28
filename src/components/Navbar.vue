@@ -3,7 +3,7 @@ import '@picocss/pico'
 import githubIcon from '@/assets/icon/github.svg';
 import linkedinIcon from '@/assets/icon/linkedin.svg';
 import gmailIcon from '@/assets/icon/gmail.svg';
-import mediumIcon from '@/assets/icon/medium.svg';
+import hashnodeIcon from '@/assets/icon/hashnode.svg';
 </script>
 
 <template>
@@ -28,8 +28,8 @@ import mediumIcon from '@/assets/icon/medium.svg';
                     </a>
                 </li>
                 <li style="animation-delay: 0.2s">
-                    <a href="https://medium.com/@ezrajedi" target="_blank" rel="noopener noreferrer" aria-label="Medium">
-                        <img :src="mediumIcon" alt="Medium" class="nav-icon" />
+                    <a href="https://hashnode.com/@cyclonex" target="_blank" rel="noopener noreferrer" aria-label="Hashnode">
+                        <img :src="hashnodeIcon" alt="Hashnode" class="nav-icon" />
                     </a>
                 </li>
                 <li style="animation-delay: 0.3s">
