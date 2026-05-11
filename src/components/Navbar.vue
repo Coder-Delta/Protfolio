@@ -1,5 +1,6 @@
 <script setup>
 import '@picocss/pico'
+import { RouterLink } from 'vue-router';
 import githubIcon from '@/assets/icon/github.svg';
 import linkedinIcon from '@/assets/icon/linkedin.svg';
 import gmailIcon from '@/assets/icon/gmail.svg';
@@ -11,9 +12,11 @@ import hashnodeIcon from '@/assets/icon/hashnode.svg';
         <nav>
             <ul>
                 <li>
-                    <h1 class="logo">
-                        <strong>RANJIT</strong>BHANDARY
-                    </h1>
+                    <RouterLink to="/" class="logo-link" aria-label="Go to home page">
+                        <h1 class="logo">
+                            <strong>RANJIT</strong>BHANDARY
+                        </h1>
+                    </RouterLink>
                 </li>
             </ul>
             <ul>
@@ -74,6 +77,12 @@ nav {
     -ms-user-select: none;
     user-select: none;
     animation: slideIn 0.6s ease-out backwards;
+}
+
+.logo-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
 }
 
 .logo strong {
