@@ -3,44 +3,142 @@ import { computed, reactive, ref } from 'vue';
 import Navbar from '@/components/Navbar.vue';
 import '@picocss/pico';
 
-const projects = ref([
+const rawProjects = [
     {
+        repo: 'videotube_backend',
         title: 'VideoTube Backend',
-        description: 'A complex playstation backend project. Built with modern technologies to handle video uploads, processing, and streaming efficiently.',
-        link: 'https://github.com/Coder-Delta/videotube_backend',
-        image: 'https://opengraph.githubassets.com/1/Coder-Delta/videotube_backend'
+        description: 'Backend for a video platform with uploads, processing, auth, and streaming-focused APIs.',
+        featured: true
     },
     {
+        repo: 'videotube-frontend',
         title: 'VideoTube Frontend',
-        description: 'It is frontend part of my chaiAurBackend project. Modern video streaming interface built with Vue.js.',
-        link: 'https://github.com/Coder-Delta/videotube-frontend',
-        image: 'https://opengraph.githubassets.com/1/Coder-Delta/videotube-frontend'
+        description: 'Vue frontend for the VideoTube platform with a polished streaming-style interface.',
+        featured: true
     },
     {
-        title: 'Signal',
-        description: 'It is a backend project of django a simple blog app with some protection. Secure and efficient blog management system.',
-        link: 'https://github.com/Coder-Delta/Signal',
-        image: 'https://opengraph.githubassets.com/1/Coder-Delta/Signal'
+        repo: 'LectureLog_backend',
+        title: 'LectureLog Backend',
+        description: 'Backend system for LectureLog, designed to manage learning workflows and academic data.',
+        featured: true
     },
     {
-        title: 'Doot',
-        description: 'A chat application with optimization. Real-time messaging platform built for performance and scalability.',
-        link: 'https://github.com/Coder-Delta/Doot',
-        image: 'https://opengraph.githubassets.com/1/Coder-Delta/Doot'
-    },
-    {
-        title: 'VerifyX',
-        description: 'It is a simple email and phone number verification system using Upstash Redis as a database to store verification codes.',
-        link: 'https://github.com/Coder-Delta/VerifyX',
-        image: 'https://opengraph.githubassets.com/1/Coder-Delta/VerifyX'
-    },
-    {
+        repo: 'BigV',
         title: 'BigV',
-        description: 'It\'s a system based on Work Queue. Efficient task management and queue processing system.',
-        link: 'https://github.com/Coder-Delta/BigV',
-        image: 'https://opengraph.githubassets.com/1/Coder-Delta/BigV'
+        description: 'Work queue based system focused on task distribution and backend processing.',
+        featured: true
+    },
+    {
+        repo: 'Signal',
+        title: 'Signal',
+        description: 'Django blog backend with protection-focused features and content management flows.',
+        featured: true
+    },
+    {
+        repo: 'Doot',
+        title: 'Doot',
+        description: 'Chat application built around real-time messaging and a cleaner communication experience.',
+        featured: true
+    },
+    {
+        repo: 'VerifyX',
+        title: 'VerifyX',
+        description: 'Email and phone verification system using Upstash Redis for secure code handling.',
+        featured: true
+    },
+    {
+        repo: 'titan',
+        title: 'Titan',
+        description: 'High-performance reverse proxy and security gateway written in Zig.',
+        featured: true
+    },
+    {
+        repo: 'Real_Estate_AI_Agent',
+        title: 'Real Estate AI Agent',
+        description: 'AI agent project built to automate client scheduling and meeting coordination.',
+        featured: false
+    },
+    {
+        repo: 'Drug-Solubilitoo',
+        title: 'Drug Solubilitoo',
+        description: 'Pharma-focused project around solubility prediction as part of ADMET analysis workflows.',
+        featured: false
+    },
+    {
+        repo: 'Code-Runner',
+        title: 'Code Runner',
+        description: 'Universal code runner for 35+ languages, created for the Zed editor ecosystem.',
+        featured: false
+    },
+    {
+        repo: 'Choco',
+        title: 'Choco',
+        description: 'AI-integrated 2D virtual avatar project exploring interactive assistant experiences.',
+        featured: false
+    },
+    {
+        repo: 'Weather_app',
+        title: 'Weather App',
+        description: 'Weather web app for checking forecast details through a simple frontend flow.',
+        featured: false
+    },
+    {
+        repo: 'dna-mutation-env',
+        title: 'DNA Mutation Env',
+        description: 'Open-ended reinforcement learning environment centered on DNA mutation experiments.',
+        featured: false
+    },
+    {
+        repo: 'Door_Of_Reality',
+        title: 'Door Of Reality',
+        description: 'Game discovery platform concept for browsing and exploring titles in one place.',
+        featured: false
+    },
+    {
+        repo: 'TodoListVueJS',
+        title: 'Todo List VueJS',
+        description: 'Basic Vue todo list project with simple task tracking interactions.',
+        featured: false
+    },
+    {
+        repo: 'Vue_Quote_Generator',
+        title: 'Vue Quote Generator',
+        description: 'Mini Vue project that generates and displays quotes in a lightweight UI.',
+        featured: false
+    },
+    {
+        repo: 'Qr_Genarator',
+        title: 'QR Generator',
+        description: 'Small utility project for generating QR codes from user input.',
+        featured: false
+    },
+    {
+        repo: 'Billboard_project',
+        title: 'Billboard Project',
+        description: 'Hackathon project built around the Tech Nova event idea.',
+        featured: false
+    },
+    {
+        repo: 'Collage_canteen',
+        title: 'College Canteen',
+        description: 'Hackathon project for a college canteen workflow and ordering experience.',
+        featured: false
+    },
+    {
+        repo: 'Todo-list',
+        title: 'Todo List',
+        description: 'Simple HTML, CSS, and JavaScript todo list built as a lightweight practice project.',
+        featured: false
     }
-]);
+];
+
+const projects = ref(
+    rawProjects.map((project) => ({
+        ...project,
+        link: `https://github.com/Coder-Delta/${project.repo}`,
+        image: `https://opengraph.githubassets.com/1/Coder-Delta/${project.repo}`
+    }))
+);
 
 const itemsPerPage = 4;
 const currentPage = ref(1);
@@ -55,8 +153,15 @@ const imageState = reactive(
 
 const totalPages = computed(() => Math.ceil(projects.value.length / itemsPerPage));
 const paginatedProjects = computed(() => {
+    const sortedProjects = [...projects.value].sort((left, right) => {
+        if (left.featured === right.featured) {
+            return 0;
+        }
+
+        return left.featured ? -1 : 1;
+    });
     const start = (currentPage.value - 1) * itemsPerPage;
-    return projects.value.slice(start, start + itemsPerPage);
+    return sortedProjects.slice(start, start + itemsPerPage);
 });
 
 const changePage = (page) => {
