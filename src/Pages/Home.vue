@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import Navbar from '@/components/Navbar.vue';
 import '@picocss/pico';
 
@@ -24,7 +25,7 @@ const toggleCategory = (category) => {
                                 I build applications using modern web technologies.
                                 I focus on writing clean code that works well.
                             </p>
-                            <a href="/projects" class="section-link">Explore My Projects →</a>
+                            <RouterLink to="/projects" class="section-link">Explore My Projects →</RouterLink>
                         </div>
                     </transition>
                 </div>

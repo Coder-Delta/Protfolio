@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import Navbar from '@/components/Navbar.vue';
 import '@picocss/pico';
 
@@ -42,9 +42,40 @@ const projects = ref([
     }
 ]);
 
-onMounted(() => {
-    document.documentElement.style.scrollBehavior = 'smooth';
+const itemsPerPage = 4;
+const currentPage = ref(1);
+const imageState = reactive(
+    Object.fromEntries(
+        projects.value.map((project) => [
+            project.title,
+            { loaded: false, error: false }
+        ])
+    )
+);
+
+const totalPages = computed(() => Math.ceil(projects.value.length / itemsPerPage));
+const paginatedProjects = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage;
+    return projects.value.slice(start, start + itemsPerPage);
 });
+
+const changePage = (page) => {
+    if (page < 1 || page > totalPages.value || page === currentPage.value) {
+        return;
+    }
+
+    currentPage.value = page;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+const markImageLoaded = (title) => {
+    imageState[title].loaded = true;
+};
+
+const markImageError = (title) => {
+    imageState[title].loaded = false;
+    imageState[title].error = true;
+};
 </script>
 
 <template>
@@ -53,28 +84,47 @@ onMounted(() => {
         <section class="container projects-section">
             <div class="content-wrapper">
                 <h1 class="page-title">PROJECTS</h1>
-                
+
                 <div class="projects-grid">
-                    <article 
-                        v-for="(project, index) in projects" 
-                        :key="index"
+                    <article
+                        v-for="(project, index) in paginatedProjects"
+                        :key="project.title"
                         class="project-card"
                         :style="{ animationDelay: `${index * 0.1}s` }"
                     >
-                        <div class="project-photo">
-                            <img 
-                                :src="project.image" 
+                        <div
+                            class="project-photo"
+                            :class="{
+                                'is-loaded': imageState[project.title].loaded,
+                                'has-error': imageState[project.title].error
+                            }"
+                        >
+                            <div v-if="!imageState[project.title].loaded && !imageState[project.title].error" class="image-loader">
+                                <span>Loading preview...</span>
+                            </div>
+
+                            <div v-if="imageState[project.title].error" class="image-fallback">
+                                <span>Preview unavailable</span>
+                                <small>Open the repository to view details.</small>
+                            </div>
+
+                            <img
+                                :src="project.image"
                                 :alt="project.title"
                                 loading="lazy"
+                                decoding="async"
+                                :class="{ visible: imageState[project.title].loaded }"
+                                @load="markImageLoaded(project.title)"
+                                @error="markImageError(project.title)"
                             />
                         </div>
-                        
+
                         <div class="project-details">
                             <h2 class="project-title">{{ project.title }}</h2>
                             <p class="project-description">{{ project.description }}</p>
-                            <a 
-                                :href="project.link" 
-                                target="_blank" 
+                            <a
+                                :href="project.link"
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 class="project-link"
                             >
@@ -83,6 +133,37 @@ onMounted(() => {
                         </div>
                     </article>
                 </div>
+
+                <nav v-if="totalPages > 1" class="pagination" aria-label="Projects pages">
+                    <button
+                        class="pagination-button"
+                        type="button"
+                        :disabled="currentPage === 1"
+                        @click="changePage(currentPage - 1)"
+                    >
+                        Previous
+                    </button>
+
+                    <button
+                        v-for="page in totalPages"
+                        :key="page"
+                        class="pagination-button"
+                        type="button"
+                        :class="{ active: currentPage === page }"
+                        @click="changePage(page)"
+                    >
+                        {{ page }}
+                    </button>
+
+                    <button
+                        class="pagination-button"
+                        type="button"
+                        :disabled="currentPage === totalPages"
+                        @click="changePage(currentPage + 1)"
+                    >
+                        Next
+                    </button>
+                </nav>
             </div>
         </section>
     </main>
@@ -162,6 +243,7 @@ main {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -182,13 +264,40 @@ main {
 }
 
 .project-photo::before {
-    content: 'Photo';
-    font-size: 2.5rem;
-    font-weight: 300;
-    color: rgba(26, 26, 26, 0.15);
-    letter-spacing: 0.1rem;
+    content: '';
     position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0) 20%, rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 0) 80%);
+    transform: translateX(-100%);
+    animation: shimmer 1.6s ease-in-out infinite;
     z-index: 0;
+}
+
+.project-photo.is-loaded::before,
+.project-photo.has-error::before {
+    display: none;
+}
+
+.image-loader,
+.image-fallback {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.35rem;
+    padding: 1rem;
+    color: rgba(26, 26, 26, 0.72);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.04rem;
+}
+
+.image-fallback small {
+    font-size: 0.72rem;
 }
 
 .project-photo img {
@@ -197,8 +306,16 @@ main {
     object-fit: contain;
     object-position: center;
     position: relative;
-    z-index: 1;
+    z-index: 2;
     border-radius: 8px;
+    opacity: 0;
+    transform: scale(0.98);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.project-photo img.visible {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .project-details {
@@ -273,6 +390,44 @@ main {
     transform: translateY(0) scale(0.98);
 }
 
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+}
+
+.pagination-button {
+    min-width: 48px;
+    border: 1px solid #1a1a1a;
+    background: rgba(255, 255, 255, 0.82);
+    color: #1a1a1a;
+    border-radius: 999px;
+    padding: 0.55rem 1rem;
+    font-family: 'Courier New', Courier, monospace;
+    transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease, opacity 0.25s ease;
+}
+
+.pagination-button:hover:not(:disabled),
+.pagination-button.active {
+    background: #1a1a1a;
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.pagination-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+@keyframes shimmer {
+    to {
+        transform: translateX(100%);
+    }
+}
+
 /* Custom Scrollbar */
 main::-webkit-scrollbar {
     width: 10px;
@@ -329,7 +484,7 @@ main::-webkit-scrollbar-thumb:hover {
     }
 
     .projects-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         gap: 1.5rem;
     }
 
@@ -366,6 +521,15 @@ main::-webkit-scrollbar-thumb:hover {
 
     .project-link:active::before {
         left: 0;
+    }
+
+    .pagination {
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .pagination-button {
+        padding: 0.5rem 0.9rem;
     }
 
     /* Hide scrollbar on mobile */
@@ -408,7 +572,7 @@ main::-webkit-scrollbar-thumb:hover {
     .project-link {
         -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
     }
-    
+
     main {
         -webkit-overflow-scrolling: touch;
     }
