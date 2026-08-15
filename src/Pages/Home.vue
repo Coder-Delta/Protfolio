@@ -38,6 +38,19 @@ const submitContact = async () => {
             <div class="content-wrapper">
 
                 <div class="category" style="animation-delay: 0s">
+                    <button class="nav-label" type="button" :aria-expanded="activeCategory === 'ENTREPRENEUR'" @click="toggleCategory('ENTREPRENEUR')">ENTREPRENEUR</button>
+                    <transition name="fade">
+                        <div v-if="activeCategory === 'ENTREPRENEUR'" class="description">
+                            <p>
+                                I turn ideas into practical solutions, finding opportunities
+                                and building products with purpose.
+                            </p>
+                            <a href="https://drive.google.com/file/d/1o2sG8T2xMICJqIggt7-Jo1HuMQtc0wSq/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="section-link">See My Resume →</a>
+                        </div>
+                    </transition>
+                </div>
+
+                <div class="category" style="animation-delay: 0.1s">
                     <button class="nav-label" type="button" :aria-expanded="activeCategory === 'DEVELOP'" @click="toggleCategory('DEVELOP')">DEVELOPER</button>
                     <transition name="fade">
                         <div v-if="activeCategory === 'DEVELOP'" class="description">
@@ -46,19 +59,6 @@ const submitContact = async () => {
                                 I focus on writing clean code that works well.
                             </p>
                             <RouterLink to="/projects" class="section-link">Explore My Projects →</RouterLink>
-                        </div>
-                    </transition>
-                </div>
-
-                <div class="category" style="animation-delay: 0.1s">
-                    <button class="nav-label" type="button" :aria-expanded="activeCategory === 'LEARN'" @click="toggleCategory('LEARN')">LEARNER</button>
-                    <transition name="fade">
-                        <div v-if="activeCategory === 'LEARN'" class="description">
-                            <p>
-                                I'm always learning new things. Technology changes fast,
-                                so I keep my skills up to date.
-                            </p>
-                            <a href="https://drive.google.com/file/d/1o2sG8T2xMICJqIggt7-Jo1HuMQtc0wSq/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="section-link">See My Resume →</a>
                         </div>
                     </transition>
                 </div>
