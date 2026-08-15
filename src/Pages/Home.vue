@@ -1,13 +1,33 @@
 <script setup>
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import Navbar from '@/components/Navbar.vue';
+import { contactAPI } from '@/services/api.js';
 import '@picocss/pico';
 
 const activeCategory = ref(null);
+const contactForm = reactive({ name: '', email: '', subject: '', message: '' });
+const contactStatus = ref('idle');
+const contactMessage = ref('');
 
 const toggleCategory = (category) => {
     activeCategory.value = activeCategory.value === category ? null : category;
+};
+
+const submitContact = async () => {
+    if (contactStatus.value === 'submitting') return;
+
+    contactStatus.value = 'submitting';
+    contactMessage.value = '';
+    try {
+        const result = await contactAPI.submit(contactForm);
+        contactStatus.value = 'success';
+        contactMessage.value = result.message || 'Thanks — your message has been sent.';
+        Object.assign(contactForm, { name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+        contactStatus.value = 'error';
+        contactMessage.value = error.message || 'Your message could not be sent. Please try again.';
+    }
 };
 </script>
 
@@ -18,7 +38,7 @@ const toggleCategory = (category) => {
             <div class="content-wrapper">
 
                 <div class="category" style="animation-delay: 0s">
-                    <h2 class="nav-label" @click="toggleCategory('DEVELOP')">DEVELOPER</h2>
+                    <button class="nav-label" type="button" :aria-expanded="activeCategory === 'DEVELOP'" @click="toggleCategory('DEVELOP')">DEVELOPER</button>
                     <transition name="fade">
                         <div v-if="activeCategory === 'DEVELOP'" class="description">
                             <p>
@@ -31,29 +51,30 @@ const toggleCategory = (category) => {
                 </div>
 
                 <div class="category" style="animation-delay: 0.1s">
-                    <h2 class="nav-label" @click="toggleCategory('LEARN')">LEARNER</h2>
+                    <button class="nav-label" type="button" :aria-expanded="activeCategory === 'LEARN'" @click="toggleCategory('LEARN')">LEARNER</button>
                     <transition name="fade">
                         <div v-if="activeCategory === 'LEARN'" class="description">
                             <p>
                                 I'm always learning new things. Technology changes fast,
                                 so I keep my skills up to date.
                             </p>
-                            <a href="https://drive.google.com/file/d/1o2sG8T2xMICJqIggt7-Jo1HuMQtc0wSq/view?usp=sharing" target="_blank" class="section-link">See My Resume →</a>
+                            <a href="https://drive.google.com/file/d/1o2sG8T2xMICJqIggt7-Jo1HuMQtc0wSq/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="section-link">See My Resume →</a>
                         </div>
                     </transition>
                 </div>
 
-                <div class="category" style="animation-delay: 0.2s">
-                    <h2 class="nav-label" @click="toggleCategory('OPENSOURCE')">OSS BUILDER</h2>
+                <div class="category" style="animation-delay: 0.3s">
+                    <button class="nav-label" type="button" :aria-expanded="activeCategory === 'CONTACT'" @click="toggleCategory('CONTACT')">LET'S CONNECT</button>
                     <transition name="fade">
-                        <div v-if="activeCategory === 'OPENSOURCE'" class="description">
-                            <p>
-                                I contribute to open source projects and maintain repositories.
-                                I work on improving code quality and helping the community.
-                            </p>
-                            <a href="https://github.com/Coder-Delta" target="_blank" rel="noopener noreferrer"
-                                class="section-link">Check My GitHub →</a>
-                        </div>
+                        <form v-if="activeCategory === 'CONTACT'" class="contact-form" @submit.prevent="submitContact">
+                            <p>Have a project or opportunity in mind? Send me a note.</p>
+                            <label>Name<input v-model.trim="contactForm.name" required minlength="2" maxlength="255" autocomplete="name" /></label>
+                            <label>Email<input v-model.trim="contactForm.email" required type="email" maxlength="255" autocomplete="email" /></label>
+                            <label>Subject<input v-model.trim="contactForm.subject" required minlength="3" maxlength="255" /></label>
+                            <label>Message<textarea v-model.trim="contactForm.message" required minlength="10" maxlength="5000" rows="4"></textarea></label>
+                            <button class="section-link" type="submit" :disabled="contactStatus === 'submitting'">{{ contactStatus === 'submitting' ? 'Sending…' : 'Send Message →' }}</button>
+                            <p v-if="contactStatus !== 'idle'" class="form-status" :class="contactStatus" role="status" aria-live="polite">{{ contactMessage }}</p>
+                        </form>
                     </transition>
                 </div>
 
@@ -110,6 +131,10 @@ main {
 }
 
 .nav-label {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font-family: inherit;
     font-size: clamp(1.8rem, 5vw, 2.5rem);
     font-weight: 400;
     letter-spacing: 0.1rem;
@@ -123,6 +148,12 @@ main {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+}
+
+.nav-label:focus-visible,
+.section-link:focus-visible {
+    outline: 3px solid #1a1a1a;
+    outline-offset: 5px;
 }
 
 .nav-label::after {
@@ -156,6 +187,32 @@ main {
     font-weight: 400;
     margin-bottom: 1rem;
 }
+
+.contact-form {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 1rem;
+    text-align: left;
+}
+
+.contact-form > p,
+.contact-form label,
+.form-status {
+    font-family: 'Courier New', Courier, monospace;
+    color: #4a4a4a;
+    font-size: 0.82rem;
+}
+
+.contact-form label { display: block; margin: 0.75rem 0; }
+.contact-form input, .contact-form textarea {
+    width: 100%; margin-top: 0.35rem; padding: 0.65rem;
+    border: 1px solid #1a1a1a; border-radius: 4px; background: rgba(255,255,255,.72);
+}
+.contact-form textarea { resize: vertical; }
+.section-link:disabled { cursor: wait; opacity: .65; }
+.form-status { margin-top: 1rem; }
+.form-status.success { color: #176b3a; }
+.form-status.error { color: #9b1c1c; }
 
 .section-link {
     display: inline-block;

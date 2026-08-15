@@ -1,161 +1,27 @@
 <script setup>
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, onMounted } from 'vue';
 import Navbar from '@/components/Navbar.vue';
+import { projectsAPI } from '@/services/api.js';
 import '@picocss/pico';
 
-const rawProjects = [
-    {
-        repo: 'videotube_backend',
-        title: 'VideoTube Backend',
-        description: 'Backend for a video platform with uploads, processing, auth, and streaming-focused APIs.',
-        featured: true
-    },
-    {
-        repo: 'videotube-frontend',
-        title: 'VideoTube Frontend',
-        description: 'Vue frontend for the VideoTube platform with a polished streaming-style interface.',
-        featured: true
-    },
-    {
-        repo: 'LectureLog_backend',
-        title: 'LectureLog Backend',
-        description: 'Backend system for LectureLog, designed to manage learning workflows and academic data.',
-        featured: true
-    },
-    {
-        repo: 'BigV',
-        title: 'BigV',
-        description: 'Work queue based system focused on task distribution and backend processing.',
-        featured: true
-    },
-    {
-        repo: 'Signal',
-        title: 'Signal',
-        description: 'Django blog backend with protection-focused features and content management flows.',
-        featured: true
-    },
-    {
-        repo: 'Doot',
-        title: 'Doot',
-        description: 'Chat application built around real-time messaging and a cleaner communication experience.',
-        featured: true
-    },
-    {
-        repo: 'VerifyX',
-        title: 'VerifyX',
-        description: 'Email and phone verification system using Upstash Redis for secure code handling.',
-        featured: true
-    },
-    {
-        repo: 'titan',
-        title: 'Titan',
-        description: 'High-performance reverse proxy and security gateway written in Zig.',
-        featured: true
-    },
-    {
-        repo: 'Real_Estate_AI_Agent',
-        title: 'Real Estate AI Agent',
-        description: 'AI agent project built to automate client scheduling and meeting coordination.',
-        featured: false
-    },
-    {
-        repo: 'Drug-Solubilitoo',
-        title: 'Drug Solubilitoo',
-        description: 'Pharma-focused project around solubility prediction as part of ADMET analysis workflows.',
-        featured: false
-    },
-    {
-        repo: 'Code-Runner',
-        title: 'Code Runner',
-        description: 'Universal code runner for 35+ languages, created for the Zed editor ecosystem.',
-        featured: false
-    },
-    {
-        repo: 'Choco',
-        title: 'Choco',
-        description: 'AI-integrated 2D virtual avatar project exploring interactive assistant experiences.',
-        featured: false
-    },
-    {
-        repo: 'Weather_app',
-        title: 'Weather App',
-        description: 'Weather web app for checking forecast details through a simple frontend flow.',
-        featured: false
-    },
-    {
-        repo: 'dna-mutation-env',
-        title: 'DNA Mutation Env',
-        description: 'Open-ended reinforcement learning environment centered on DNA mutation experiments.',
-        featured: false
-    },
-    {
-        repo: 'Door_Of_Reality',
-        title: 'Door Of Reality',
-        description: 'Game discovery platform concept for browsing and exploring titles in one place.',
-        featured: false
-    },
-    {
-        repo: 'TodoListVueJS',
-        title: 'Todo List VueJS',
-        description: 'Basic Vue todo list project with simple task tracking interactions.',
-        featured: false
-    },
-    {
-        repo: 'Vue_Quote_Generator',
-        title: 'Vue Quote Generator',
-        description: 'Mini Vue project that generates and displays quotes in a lightweight UI.',
-        featured: false
-    },
-    {
-        repo: 'Qr_Genarator',
-        title: 'QR Generator',
-        description: 'Small utility project for generating QR codes from user input.',
-        featured: false
-    },
-    {
-        repo: 'Billboard_project',
-        title: 'Billboard Project',
-        description: 'Hackathon project built around the Tech Nova event idea.',
-        featured: false
-    },
-    {
-        repo: 'Collage_canteen',
-        title: 'College Canteen',
-        description: 'Hackathon project for a college canteen workflow and ordering experience.',
-        featured: false
-    },
-    {
-        repo: 'Todo-list',
-        title: 'Todo List',
-        description: 'Simple HTML, CSS, and JavaScript todo list built as a lightweight practice project.',
-        featured: false
-    }
-];
-
-const projects = ref(
-    rawProjects.map((project) => ({
-        ...project,
-        link: `https://github.com/Coder-Delta/${project.repo}`,
-        image: `https://opengraph.githubassets.com/1/Coder-Delta/${project.repo}`
-    }))
-);
+const projects = ref([]);
+const isLoading = ref(false);
+const error = ref(null);
 
 const itemsPerPage = 4;
 const currentPage = ref(1);
-const imageState = reactive(
-    Object.fromEntries(
-        projects.value.map((project) => [
-            project.title,
-            { loaded: false, error: false }
-        ])
-    )
-);
+const imageState = reactive({});
 
 const totalPages = computed(() => Math.ceil(projects.value.length / itemsPerPage));
 const paginatedProjects = computed(() => {
     const sortedProjects = [...projects.value].sort((left, right) => {
+        const starDifference = (right.github_stars || 0) - (left.github_stars || 0);
+        if (starDifference !== 0) {
+            return starDifference;
+        }
+
         if (left.featured === right.featured) {
-            return 0;
+            return (left.display_order || 0) - (right.display_order || 0);
         }
 
         return left.featured ? -1 : 1;
@@ -174,13 +40,42 @@ const changePage = (page) => {
 };
 
 const markImageLoaded = (title) => {
-    imageState[title].loaded = true;
+    if (imageState[title]) {
+        imageState[title].loaded = true;
+    }
 };
 
 const markImageError = (title) => {
-    imageState[title].loaded = false;
-    imageState[title].error = true;
+    if (imageState[title]) {
+        imageState[title].loaded = false;
+        imageState[title].error = true;
+    }
 };
+
+// Fetch projects from API
+const fetchProjects = async () => {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+        const data = await projectsAPI.getAll();
+        projects.value = data;
+
+        // Initialize image state for each project
+        data.forEach((project) => {
+            imageState[project.title] = { loaded: false, error: false };
+        });
+    } catch (err) {
+        console.error('Failed to load projects:', err);
+        error.value = 'Failed to load projects. Please try again later.';
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+onMounted(() => {
+    fetchProjects();
+});
 </script>
 
 <template>
@@ -190,7 +85,27 @@ const markImageError = (title) => {
             <div class="content-wrapper">
                 <h1 class="page-title">PROJECTS</h1>
 
-                <div class="projects-grid">
+                <!-- Loading State -->
+                <div v-if="isLoading" class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading projects...</p>
+                </div>
+
+                <!-- Error State -->
+                <div v-else-if="error" class="error-state">
+                    <p>{{ error }}</p>
+                    <button @click="fetchProjects" class="retry-button">
+                        Try Again
+                    </button>
+                </div>
+
+                <!-- Empty State -->
+                <div v-else-if="projects.length === 0" class="empty-state">
+                    <p>No projects found.</p>
+                </div>
+
+                <!-- Projects Grid -->
+                <div v-else class="projects-grid">
                     <article
                         v-for="(project, index) in paginatedProjects"
                         :key="project.title"
@@ -239,7 +154,8 @@ const markImageError = (title) => {
                     </article>
                 </div>
 
-                <nav v-if="totalPages > 1" class="pagination" aria-label="Projects pages">
+                <!-- Pagination -->
+                <nav v-if="projects.length > 0 && totalPages > 1" class="pagination" aria-label="Projects pages">
                     <button
                         class="pagination-button"
                         type="button"
@@ -317,6 +233,87 @@ main {
     color: #1a1a1a;
     text-align: center;
     animation: slideIn 0.6s ease-out backwards;
+}
+
+/* Loading, Error, Empty States */
+.loading-state,
+.error-state,
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    gap: 1.5rem;
+    text-align: center;
+    animation: slideIn 0.6s ease-out backwards;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(26, 26, 26, 0.1);
+    border-top-color: #1a1a1a;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-state p,
+.error-state p,
+.empty-state p {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: clamp(0.85rem, 2vw, 1rem);
+    color: #4a4a4a;
+}
+
+.error-state {
+    gap: 1rem;
+}
+
+.retry-button {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    color: #1a1a1a;
+    background: transparent;
+    border: 1px solid #1a1a1a;
+    padding: 0.6rem 1.4rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.retry-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: #1a1a1a;
+    transition: left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: -1;
+}
+
+.retry-button:hover {
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.retry-button:hover::before {
+    left: 0;
+}
+
+.retry-button:active {
+    transform: translateY(0) scale(0.98);
 }
 
 .projects-grid {
