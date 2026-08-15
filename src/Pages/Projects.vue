@@ -2,6 +2,7 @@
 import { computed, reactive, ref, onMounted } from 'vue';
 import Navbar from '@/components/Navbar.vue';
 import { projectsAPI } from '@/services/api.js';
+import { analytics } from '@/services/analytics.js';
 import '@picocss/pico';
 
 const projects = ref([]);
@@ -50,6 +51,10 @@ const markImageError = (title) => {
         imageState[title].loaded = false;
         imageState[title].error = true;
     }
+};
+
+const trackProjectView = (project) => {
+    analytics.trackProject(project);
 };
 
 // Fetch projects from API
@@ -147,6 +152,7 @@ onMounted(() => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="project-link"
+                                @click="trackProjectView(project)"
                             >
                                 Visit Project →
                             </a>

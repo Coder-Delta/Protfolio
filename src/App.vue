@@ -4,7 +4,12 @@
       <component :is="Component" :key="route.fullPath" />
     </transition>
   </router-view>
+  <PrivacyNotice />
 </template>
+
+<script setup>
+import PrivacyNotice from '@/components/PrivacyNotice.vue';
+</script>
 
 <style scoped>
 .page-slide-enter-active,

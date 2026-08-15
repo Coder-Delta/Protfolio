@@ -31,7 +31,7 @@ const corsOptions = {
     return callback(new Error('Origin is not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
 
@@ -48,10 +48,12 @@ app.use('/api/', limiter);
 // Import routes
 import projectRoutes from './routes/projects.js';
 import contactRoutes from './routes/contact.js';
+import analyticsRoutes from './routes/analytics.js';
 
 // Routes
 app.use('/api/projects', projectRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
