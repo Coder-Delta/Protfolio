@@ -1,11 +1,12 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue';
 import { analytics } from '@/services/analytics.js';
+import { RouterLink } from 'vue-router';
 
 const decided = ref(analytics.hasConsent() || localStorage.getItem('portfolio-analytics-consent') === 'denied');
 const open = ref(!decided.value);
-const choose = (enabled) => {
-    analytics.setConsent(enabled);
+const choose = async (enabled) => {
+    await analytics.setConsent(enabled);
     decided.value = true;
     open.value = false;
 };
@@ -16,10 +17,10 @@ onUnmounted(() => window.removeEventListener('analytics-consent-changed', sync))
 
 <template>
     <aside v-if="open" class="privacy-notice" role="region" aria-label="Analytics privacy notice">
-        <p>We use optional, anonymous analytics to understand visits and improve this portfolio. We do not collect names, emails, raw IP addresses, or fingerprints.</p>
+        <p>We use optional analytics to understand visits, device type, approximate location, and traffic sources. <RouterLink to="/privacy-analytics">Privacy &amp; Analytics Policy</RouterLink></p>
         <div class="privacy-actions">
-            <button type="button" class="allow" @click="choose(true)">Allow anonymous analytics</button>
-            <button type="button" class="decline" @click="choose(false)">No thanks</button>
+            <button type="button" class="choice" @click="choose(true)">Allow Analytics</button>
+            <button type="button" class="choice" @click="choose(false)">Deny</button>
         </div>
     </aside>
     <button v-else class="privacy-settings" type="button" @click="open = true">Analytics preferences</button>
@@ -30,7 +31,6 @@ onUnmounted(() => window.removeEventListener('analytics-consent-changed', sync))
 .privacy-notice p { margin: 0 0 .75rem; color: #333; }
 .privacy-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .privacy-notice button, .privacy-settings { margin: 0; padding: .45rem .7rem; font-size: .8rem; cursor: pointer; }
-.allow { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
-.decline, .privacy-settings { background: #fff; border: 1px solid #555; color: #222; }
+.choice, .privacy-settings { background: #fff; border: 1px solid #555; color: #222; }
 .privacy-settings { position: fixed; right: .65rem; bottom: .65rem; z-index: 20; opacity: .78; }
 </style>

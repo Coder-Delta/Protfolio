@@ -27,6 +27,21 @@ const queryUtm = () => {
   const params = new URLSearchParams(window.location.search);
   return { source: params.get('utm_source'), medium: params.get('utm_medium'), campaign: params.get('utm_campaign') };
 };
+const visitorId = () => {
+  const existing = localStorage.getItem(VISITOR_KEY);
+  if (existing) return existing;
+  const value = uuid();
+  localStorage.setItem(VISITOR_KEY, value);
+  return value;
+};
+const registerConsent = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/analytics/consent`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visitorId: visitorId() }),
+    });
+    return response.ok;
+  } catch { return false; }
+};
 const finishPage = (beacon = false) => {
   if (!sessionId || !currentPath) return;
   const durationSeconds = Math.max(0, Math.round((performance.now() - pageStartedAt) / 1000));
@@ -35,28 +50,31 @@ const finishPage = (beacon = false) => {
 
 export const analytics = {
   hasConsent: consent,
-  setConsent(value) {
+  async setConsent(value) {
     if (!isBrowser()) return;
-    localStorage.setItem(CONSENT_KEY, value ? 'granted' : 'denied');
     if (!value) {
       finishPage(true);
       if (sessionId) send('/analytics/session-end', { sessionId, exitPage: currentPath || window.location.pathname }, true);
+      const existingVisitorId = localStorage.getItem(VISITOR_KEY);
+      if (existingVisitorId) send('/analytics/consent/withdraw', { visitorId: existingVisitorId }, true);
+      localStorage.setItem(CONSENT_KEY, 'denied');
       localStorage.removeItem(VISITOR_KEY);
       sessionStorage.removeItem(SESSION_KEY);
       sessionId = null;
     } else {
+      localStorage.setItem(CONSENT_KEY, 'granted');
       this.start(window.location.pathname);
     }
     window.dispatchEvent(new CustomEvent('analytics-consent-changed'));
   },
   async start(path = window.location.pathname) {
     if (!consent() || sessionId) return;
-    const visitorId = localStorage.getItem(VISITOR_KEY) || uuid();
-    localStorage.setItem(VISITOR_KEY, visitorId);
+    const currentVisitorId = visitorId();
     try {
+      if (!await registerConsent()) return;
       const response = await fetch(`${API_BASE_URL}/analytics/session`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visitorId, path, referrer: document.referrer || null, utm: queryUtm(), screen: { width: window.screen.width, height: window.screen.height } }),
+        body: JSON.stringify({ visitorId: currentVisitorId, path, referrer: document.referrer || null, utm: queryUtm(), screen: { width: window.screen.width, height: window.screen.height } }),
       });
       const result = await response.json();
       if (!response.ok || !result?.data?.sessionId) return;

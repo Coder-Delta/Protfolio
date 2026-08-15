@@ -2,11 +2,13 @@ import { createRouter, createWebHistory } from "vue-router"
 import Home from "@/Pages/Home.vue"
 import Projects from "@/Pages/Projects.vue"
 import AnalyticsDashboard from "@/Pages/AnalyticsDashboard.vue"
+import PrivacyAnalytics from "@/Pages/PrivacyAnalytics.vue"
 
 const routes = [
   { path: "/", component: Home, meta: { transition: "page-slide" } },
   { path: "/projects", component: Projects, meta: { transition: "page-slide" } },
-  { path: "/analytics", component: AnalyticsDashboard, meta: { transition: "page-slide" } }
+  { path: "/analytics", component: AnalyticsDashboard, meta: { transition: "page-slide" } },
+  { path: "/privacy-analytics", component: PrivacyAnalytics, meta: { transition: "page-slide" } }
 ]
 
 const router = createRouter({

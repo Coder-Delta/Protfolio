@@ -3,12 +3,13 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
 import { query as dbQuery } from '../db/client.js';
-import { createSession, endSession, isPath, isSessionActive, isUuid, recordEvent, recordPageView, recordProjectView } from '../services/analytics.js';
+import { createSession, endSession, hasActiveConsent, isPath, isSessionActive, isUuid, recordConsent, recordEvent, recordPageView, recordProjectView, withdrawConsent } from '../services/analytics.js';
 
 const router = express.Router();
 const analyticsLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 90, standardHeaders: 'draft-7', legacyHeaders: false, message: { success: false, message: 'Too many analytics requests.' } });
 const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 8, standardHeaders: 'draft-7', legacyHeaders: false, message: { success: false, message: 'Too many login attempts.' } });
 const EVENT_NAMES = new Set(['privacy_notice_dismissed']);
+const CONSENT_VERSION = process.env.ANALYTICS_CONSENT_VERSION || '1';
 
 const analyticsError = (res, error) => {
   console.error('Analytics error:', error.message);
@@ -22,6 +23,22 @@ const validationErrors = (req, res) => {
 };
 const validSession = async (sessionId) => isUuid(sessionId) && isSessionActive(sessionId);
 
+router.post('/consent', analyticsLimiter, [body('visitorId').custom(isUuid)], async (req, res) => {
+  if (validationErrors(req, res)) return;
+  try {
+    await recordConsent(req.body.visitorId, CONSENT_VERSION);
+    res.status(202).json({ success: true, data: { consentVersion: CONSENT_VERSION } });
+  } catch (error) { analyticsError(res, error); }
+});
+
+router.post('/consent/withdraw', analyticsLimiter, [body('visitorId').custom(isUuid)], async (req, res) => {
+  if (validationErrors(req, res)) return;
+  try {
+    await withdrawConsent(req.body.visitorId, CONSENT_VERSION);
+    res.status(202).json({ success: true });
+  } catch (error) { analyticsError(res, error); }
+});
+
 router.post('/session', analyticsLimiter, [
   body('visitorId').custom(isUuid),
   body('path').custom(isPath),
@@ -31,7 +48,8 @@ router.post('/session', analyticsLimiter, [
 ], async (req, res) => {
   if (validationErrors(req, res)) return;
   try {
-    const data = await createSession(req.body, req.headers);
+    if (!await hasActiveConsent(req.body.visitorId, CONSENT_VERSION)) return res.status(403).json({ success: false, message: 'Analytics consent is required.' });
+    const data = await createSession(req.body, { ...req.headers, ip: req.ip });
     res.status(201).json({ success: true, data });
   } catch (error) { analyticsError(res, error); }
 });
@@ -122,18 +140,20 @@ router.get('/admin/summary', requireAdmin, async (req, res) => {
   const f = range.where;
   const params = range.params;
   try {
-    const [overview, pages, projects, sources, locations, devices, browsers, operatingSystems, trends] = await Promise.all([
+    const [overview, pages, projects, sources, countries, regions, cities, devices, browsers, operatingSystems, trends] = await Promise.all([
       dbQuery(`SELECT (SELECT COUNT(*)::int FROM analytics_visitors) AS total_visitors, (SELECT COUNT(*)::int FROM analytics_page_views WHERE ${f('started_at')}) AS page_views, COUNT(*)::int AS sessions, COUNT(DISTINCT visitor_id)::int AS unique_visitors, COUNT(DISTINCT visitor_id) FILTER (WHERE visit_count = 1)::int AS new_visitors, COUNT(DISTINCT visitor_id) FILTER (WHERE visit_count > 1)::int AS returning_visitors, COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (COALESCE(ended_at, last_activity_at) - started_at))) )::int, 0) AS average_session_seconds FROM analytics_sessions JOIN analytics_visitors ON analytics_visitors.id = analytics_sessions.visitor_id WHERE ${f('started_at')}`, params),
       dbQuery(`SELECT path AS label, COUNT(*)::int AS value, COALESCE(ROUND(AVG(duration_seconds))::int, 0) AS average_seconds FROM analytics_page_views WHERE ${f('started_at')} GROUP BY path ORDER BY value DESC LIMIT 10`, params),
       dbQuery(`SELECT project_name AS label, COUNT(*)::int AS value FROM analytics_project_views WHERE ${f('viewed_at')} GROUP BY project_name ORDER BY value DESC LIMIT 10`, params),
       dbQuery(`SELECT referrer_source AS label, COUNT(*)::int AS value FROM analytics_sessions WHERE ${f('started_at')} GROUP BY referrer_source ORDER BY value DESC`, params),
-      dbQuery(`SELECT COALESCE(NULLIF(city, ''), NULLIF(region, ''), NULLIF(country, ''), 'Unknown') AS label, COUNT(*)::int AS value FROM analytics_sessions WHERE ${f('started_at')} GROUP BY 1 ORDER BY value DESC LIMIT 10`, params),
+      dbQuery(`SELECT COALESCE(NULLIF(country, ''), 'Unknown') AS label, COUNT(*)::int AS value FROM analytics_sessions WHERE ${f('started_at')} GROUP BY 1 ORDER BY value DESC LIMIT 10`, params),
+      dbQuery(`SELECT COALESCE(NULLIF(region, ''), 'Unknown') AS label, COUNT(*)::int AS value FROM analytics_sessions WHERE ${f('started_at')} GROUP BY 1 ORDER BY value DESC LIMIT 10`, params),
+      dbQuery(`SELECT COALESCE(NULLIF(city, ''), 'Unknown') AS label, COUNT(*)::int AS value FROM analytics_sessions WHERE ${f('started_at')} GROUP BY 1 ORDER BY value DESC LIMIT 10`, params),
       dbQuery(`SELECT device_type AS label, COUNT(*)::int AS value FROM analytics_sessions WHERE ${f('started_at')} GROUP BY device_type ORDER BY value DESC`, params),
       dbQuery(`SELECT browser AS label, COUNT(*)::int AS value FROM analytics_sessions WHERE ${f('started_at')} GROUP BY browser ORDER BY value DESC`, params),
       dbQuery(`SELECT operating_system AS label, COUNT(*)::int AS value FROM analytics_sessions WHERE ${f('started_at')} GROUP BY operating_system ORDER BY value DESC`, params),
       dbQuery(`SELECT TO_CHAR(date_trunc('day', started_at), 'YYYY-MM-DD') AS label, COUNT(*)::int AS value, COUNT(DISTINCT visitor_id)::int AS visitors FROM analytics_sessions WHERE ${f('started_at')} GROUP BY 1 ORDER BY 1`, params),
     ]);
-    res.json({ success: true, data: { days: range.days, start: range.start, end: range.end, overview: overview.rows[0], pages: pages.rows, projects: projects.rows, sources: sources.rows, locations: locations.rows, devices: devices.rows, browsers: browsers.rows, operatingSystems: operatingSystems.rows, trends: trends.rows } });
+    res.json({ success: true, data: { days: range.days, start: range.start, end: range.end, overview: overview.rows[0], pages: pages.rows, projects: projects.rows, sources: sources.rows, countries: countries.rows, regions: regions.rows, cities: cities.rows, devices: devices.rows, browsers: browsers.rows, operatingSystems: operatingSystems.rows, trends: trends.rows } });
   } catch (error) { analyticsError(res, error); }
 });
 

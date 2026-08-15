@@ -49,11 +49,19 @@ app.use('/api/', limiter);
 import projectRoutes from './routes/projects.js';
 import contactRoutes from './routes/contact.js';
 import analyticsRoutes from './routes/analytics.js';
+import { cleanupAnalytics } from './services/analytics.js';
 
 // Routes
 app.use('/api/projects', projectRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// Retention runs independently of requests. Failures are logged but never affect
+// the portfolio API; the next scheduled run will retry.
+const cleanupIntervalMs = 24 * 60 * 60 * 1000;
+const runAnalyticsCleanup = () => cleanupAnalytics().catch((error) => console.error('Analytics cleanup failed:', error.message));
+runAnalyticsCleanup();
+setInterval(runAnalyticsCleanup, cleanupIntervalMs).unref();
 
 // Health check
 app.get('/api/health', (req, res) => {

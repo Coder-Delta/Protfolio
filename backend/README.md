@@ -4,13 +4,16 @@ A Node.js + Express REST API for Ranjit's Portfolio with PostgreSQL database.
 
 ## Anonymous Analytics
 
-The `/api/analytics` routes are independent from the portfolio APIs. They accept only opted-in, anonymous telemetry and are rate-limited separately. No IP address, raw user-agent, contact data, or browser fingerprint is persisted. Coarse location is read only from trusted deployment headers (such as Vercel's country/region/city headers), if available.
+The `/api/analytics` routes are independent from the portfolio APIs. They accept only opted-in, anonymous telemetry and are rate-limited separately. Contact data, raw user-agent strings, and browser fingerprints are never persisted. The server may temporarily persist the request IP after consent for location/abuse purposes; it is never exposed by the dashboard and is cleared automatically after `ANALYTICS_IP_RETENTION_DAYS`. Coarse location is read only from trusted deployment headers (such as Vercel's country/region/city headers), if available.
 
 Set these backend-only environment variables before enabling the private dashboard:
 
 ```env
 ANALYTICS_ADMIN_PASSWORD=a-long-unique-password
 ANALYTICS_ADMIN_TOKEN_SECRET=a-separate-long-random-secret
+ANALYTICS_CONSENT_VERSION=1
+ANALYTICS_IP_RETENTION_DAYS=30
+ANALYTICS_RETENTION_DAYS=365
 ```
 
 Public, best-effort endpoints are `POST /api/analytics/session`, `/page-view`, `/project-view`, `/event`, and `/session-end`. Dashboard data is available only through `GET /api/analytics/admin/summary` with an authenticated bearer token from `POST /api/analytics/admin/login`.

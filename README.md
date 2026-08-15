@@ -210,13 +210,16 @@ FRONTEND_URL=http://localhost:5173
 # Private analytics dashboard (backend only; never add these to VITE_ variables)
 ANALYTICS_ADMIN_PASSWORD=use-a-long-unique-password
 ANALYTICS_ADMIN_TOKEN_SECRET=use-a-separate-long-random-secret
+ANALYTICS_CONSENT_VERSION=1
+ANALYTICS_IP_RETENTION_DAYS=30
+ANALYTICS_RETENTION_DAYS=365
 ```
 
 ## Private, Anonymous Analytics
 
-The portfolio contains a self-contained analytics module. It is opt-in: visitors see a clear notice and can decline or later change their preference. With permission, the browser creates a random UUID stored locally and sends small background requests. It never sends contact-form data to analytics, and does not use fingerprinting.
+The portfolio contains a self-contained analytics module. It is opt-in: visitors see a clear notice, can decline, and can later change their preference at `/privacy-analytics`. With permission, the browser creates a random UUID stored locally and sends small background requests. It never sends contact-form data to analytics, and does not use fingerprinting.
 
-The server stores only the random visitor ID, session/page timing, project IDs, referrer category, UTM fields, coarse device/browser/operating-system labels, screen-size buckets, and coarse location headers supplied by the deployment provider. Raw IP addresses and raw user-agent strings are never written to PostgreSQL. Location remains `Unknown` when the host does not supply a coarse location header.
+The server stores the random visitor ID, consent version, session/page timing, project IDs, referrer category, UTM fields, coarse device/browser/operating-system labels, screen-size buckets, and coarse location headers supplied by the deployment provider. It receives the IP address only from Express's trusted request chain (never from the frontend), stores it only when consent is registered, and automatically clears it after `ANALYTICS_IP_RETENTION_DAYS` (30 by default). Raw user-agent strings are never written to PostgreSQL. Location remains `Unknown` when the host does not supply a coarse location header.
 
 Open `/analytics` to sign in to the private dashboard. Configure both backend analytics secrets before deploying. The dashboard token is held in `sessionStorage`, expires after eight hours, and all dashboard data routes require a valid bearer token.
 

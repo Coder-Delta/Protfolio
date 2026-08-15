@@ -56,11 +56,25 @@ CREATE TABLE IF NOT EXISTS analytics_sessions (
   country VARCHAR(100),
   region VARCHAR(100),
   city VARCHAR(100),
+  ip_address INET,
   device_type VARCHAR(20) NOT NULL DEFAULT 'Other',
   browser VARCHAR(50) NOT NULL DEFAULT 'Other',
   operating_system VARCHAR(50) NOT NULL DEFAULT 'Other',
   screen_size VARCHAR(20) NOT NULL DEFAULT 'Unknown',
   CHECK (ended_at IS NULL OR ended_at >= started_at)
+);
+
+-- Safe upgrades for installations that ran the earlier analytics migration.
+ALTER TABLE analytics_sessions ADD COLUMN IF NOT EXISTS ip_address INET;
+
+CREATE TABLE IF NOT EXISTS analytics_consents (
+  id BIGSERIAL PRIMARY KEY,
+  visitor_id UUID NOT NULL REFERENCES analytics_visitors(id) ON DELETE CASCADE,
+  status VARCHAR(16) NOT NULL CHECK (status IN ('allowed', 'withdrawn')),
+  consent_version VARCHAR(32) NOT NULL,
+  granted_at TIMESTAMPTZ,
+  withdrawn_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS analytics_page_views (
@@ -97,3 +111,4 @@ CREATE INDEX IF NOT EXISTS idx_analytics_page_views_session ON analytics_page_vi
 CREATE INDEX IF NOT EXISTS idx_analytics_page_views_path ON analytics_page_views(path, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_analytics_project_views_project ON analytics_project_views(project_id, viewed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_analytics_events_session ON analytics_events(session_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_analytics_consents_visitor ON analytics_consents(visitor_id, created_at DESC);

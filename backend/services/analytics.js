@@ -57,7 +57,7 @@ export const createSession = async ({ visitorId, path, referrer, utm = {}, scree
       `INSERT INTO analytics_visitors (id, first_seen_at, last_seen_at, visit_count)
        VALUES ($1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1)
        ON CONFLICT (id) DO UPDATE SET last_seen_at = CURRENT_TIMESTAMP, visit_count = analytics_visitors.visit_count + 1
-       RETURNING (xmax = 0) AS is_new`,
+       RETURNING (visit_count = 1) AS is_new`,
       [visitorId]
     );
     const sessionId = crypto.randomUUID();
@@ -66,9 +66,9 @@ export const createSession = async ({ visitorId, path, referrer, utm = {}, scree
     const location = locationFromHeaders(headers);
     await client.query(
       `INSERT INTO analytics_sessions
-       (id, visitor_id, entry_page, referrer_source, referrer_host, utm_source, utm_medium, utm_campaign, country, region, city, device_type, browser, operating_system, screen_size)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-      [sessionId, visitorId, path, source.source, source.host, trimValue(utm.source, 100), trimValue(utm.medium, 100), trimValue(utm.campaign, 100), location.country, location.region, location.city, device.deviceType, device.browser, device.operatingSystem, screenBucket(screen?.width, screen?.height)]
+      (id, visitor_id, entry_page, referrer_source, referrer_host, utm_source, utm_medium, utm_campaign, country, region, city, ip_address, device_type, browser, operating_system, screen_size)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+      [sessionId, visitorId, path, source.source, source.host, trimValue(utm.source, 100), trimValue(utm.medium, 100), trimValue(utm.campaign, 100), location.country, location.region, location.city, headers.ip || null, device.deviceType, device.browser, device.operatingSystem, screenBucket(screen?.width, screen?.height)]
     );
     await client.query('COMMIT');
     return { sessionId, isNewVisitor: visitor.rows[0].is_new };
@@ -78,6 +78,61 @@ export const createSession = async ({ visitorId, path, referrer, utm = {}, scree
   } finally {
     client.release();
   }
+};
+
+export const recordConsent = async (visitorId, consentVersion) => {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `INSERT INTO analytics_visitors (id, first_seen_at, last_seen_at, visit_count)
+       VALUES ($1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+       ON CONFLICT (id) DO NOTHING`,
+      [visitorId]
+    );
+    await client.query(
+      `INSERT INTO analytics_consents (visitor_id, status, consent_version, granted_at)
+       SELECT $1, 'allowed', $2::varchar(32), CURRENT_TIMESTAMP
+       WHERE COALESCE((
+         SELECT status FROM analytics_consents
+         WHERE visitor_id = $1 AND consent_version = $2::varchar(32)
+         ORDER BY created_at DESC LIMIT 1
+       ), '') <> 'allowed'`,
+      [visitorId, consentVersion]
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
+};
+
+export const withdrawConsent = async (visitorId, consentVersion) => {
+  await dbQuery(
+    `INSERT INTO analytics_consents (visitor_id, status, consent_version, withdrawn_at)
+     SELECT $1, 'withdrawn', $2::varchar(32), CURRENT_TIMESTAMP
+     WHERE EXISTS (SELECT 1 FROM analytics_visitors WHERE id = $1)`,
+    [visitorId, consentVersion]
+  );
+};
+
+export const hasActiveConsent = async (visitorId, consentVersion) => {
+  const result = await dbQuery(
+    `SELECT status FROM analytics_consents WHERE visitor_id = $1 AND consent_version = $2
+     ORDER BY created_at DESC LIMIT 1`,
+    [visitorId, consentVersion]
+  );
+  return result.rows[0]?.status === 'allowed';
+};
+
+export const cleanupAnalytics = async () => {
+  const ipDays = Math.max(Number.parseInt(process.env.ANALYTICS_IP_RETENTION_DAYS || '30', 10) || 30, 1);
+  const analyticsDays = Math.max(Number.parseInt(process.env.ANALYTICS_RETENTION_DAYS || '365', 10) || 365, 1);
+  const [anonymized, deleted] = await Promise.all([
+    dbQuery(`UPDATE analytics_sessions SET ip_address = NULL WHERE ip_address IS NOT NULL AND started_at < CURRENT_TIMESTAMP - $1::interval`, [`${ipDays} days`]),
+    dbQuery(`DELETE FROM analytics_sessions WHERE started_at < CURRENT_TIMESTAMP - $1::interval`, [`${analyticsDays} days`]),
+  ]);
+  return { anonymized: anonymized.rowCount, deleted: deleted.rowCount };
 };
 
 export const recordPageView = async ({ sessionId, path, durationSeconds = 0 }) => {
@@ -117,12 +172,14 @@ export const endSession = async ({ sessionId, exitPage }) => {
 };
 
 export const isSessionActive = async (sessionId) => {
+  const consentVersion = process.env.ANALYTICS_CONSENT_VERSION || '1';
   const result = await dbQuery(
-    `SELECT id FROM analytics_sessions
+    `SELECT analytics_sessions.id FROM analytics_sessions
      WHERE id = $1
        AND last_activity_at > CURRENT_TIMESTAMP - $2::interval
-       AND (ended_at IS NULL OR ended_at > CURRENT_TIMESTAMP - INTERVAL '5 minutes')`,
-    [sessionId, `${Math.floor(INACTIVITY_MS / 60000)} minutes`]
+       AND (ended_at IS NULL OR ended_at > CURRENT_TIMESTAMP - INTERVAL '5 minutes')
+       AND (SELECT status FROM analytics_consents WHERE visitor_id = analytics_sessions.visitor_id AND consent_version = $3 ORDER BY created_at DESC LIMIT 1) = 'allowed'`,
+    [sessionId, `${Math.floor(INACTIVITY_MS / 60000)} minutes`, consentVersion]
   );
   return result.rowCount > 0;
 };
