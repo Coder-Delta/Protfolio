@@ -1,5 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 const CONSENT_KEY = 'portfolio-analytics-consent';
+const CONSENT_DATE_KEY = 'portfolio-analytics-consent-date';
 const VISITOR_KEY = 'portfolio-analytics-visitor';
 const SESSION_KEY = 'portfolio-analytics-session';
 
@@ -9,7 +10,9 @@ let pageStartedAt = 0;
 let initialized = false;
 
 const isBrowser = () => typeof window !== 'undefined';
-const consent = () => isBrowser() && localStorage.getItem(CONSENT_KEY) === 'granted';
+const today = () => new Date().toLocaleDateString('en-CA');
+const hasDecisionToday = () => isBrowser() && localStorage.getItem(CONSENT_DATE_KEY) === today();
+const consent = () => hasDecisionToday() && localStorage.getItem(CONSENT_KEY) === 'granted';
 const uuid = () => crypto.randomUUID();
 const send = async (path, payload, beacon = false) => {
   try {
@@ -50,6 +53,7 @@ const finishPage = (beacon = false) => {
 
 export const analytics = {
   hasConsent: consent,
+  hasDecisionToday,
   async setConsent(value) {
     if (!isBrowser()) return;
     if (!value) {
@@ -58,11 +62,13 @@ export const analytics = {
       const existingVisitorId = localStorage.getItem(VISITOR_KEY);
       if (existingVisitorId) send('/analytics/consent/withdraw', { visitorId: existingVisitorId }, true);
       localStorage.setItem(CONSENT_KEY, 'denied');
+      localStorage.setItem(CONSENT_DATE_KEY, today());
       localStorage.removeItem(VISITOR_KEY);
       sessionStorage.removeItem(SESSION_KEY);
       sessionId = null;
     } else {
       localStorage.setItem(CONSENT_KEY, 'granted');
+      localStorage.setItem(CONSENT_DATE_KEY, today());
       this.start(window.location.pathname);
     }
     window.dispatchEvent(new CustomEvent('analytics-consent-changed'));
