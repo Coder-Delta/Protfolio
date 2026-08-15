@@ -45,7 +45,7 @@ const submitContact = async () => {
                                 I turn ideas into practical solutions, finding opportunities
                                 and building products with purpose.
                             </p>
-                            <a href="https://drive.google.com/file/d/1o2sG8T2xMICJqIggt7-Jo1HuMQtc0wSq/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="section-link">See My Resume →</a>
+                            <a href="https://zolora.co.in" target="_blank" rel="noopener noreferrer" class="section-link">Go to Zolora →</a>
                         </div>
                     </transition>
                 </div>
