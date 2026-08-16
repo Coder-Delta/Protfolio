@@ -7,7 +7,14 @@ const router = express.Router();
 // GET all projects
 router.get('/', async (req, res) => {
   try {
-    await syncGithubProjects();
+    // GitHub sync is best-effort. A failure must never prevent already-stored
+    // projects from being returned; the database remains the source of truth.
+    try {
+      await syncGithubProjects();
+    } catch (syncError) {
+      console.warn('GitHub sync failed, continuing with stored projects:', syncError.message);
+    }
+
     const result = await dbQuery(
       `SELECT id, title, description, repo, github_stars, featured, display_order, created_at
        FROM projects 

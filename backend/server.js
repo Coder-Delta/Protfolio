@@ -63,6 +63,20 @@ const runAnalyticsCleanup = () => cleanupAnalytics().catch((error) => console.er
 runAnalyticsCleanup();
 setInterval(runAnalyticsCleanup, cleanupIntervalMs).unref();
 
+// Root diagnostic route - useful for deployment checks. Reports whether the
+// database is configured so missing DATABASE_URL is immediately visible.
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      service: 'portfolio-backend',
+      status: 'ok',
+      databaseConfigured: Boolean(process.env.DATABASE_URL),
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });
