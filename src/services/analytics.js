@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = `${import.meta.env.BACKEND_URL || 'http://localhost:5000'}/api`;
 const CONSENT_KEY = 'portfolio-analytics-consent';
 const CONSENT_DATE_KEY = 'portfolio-analytics-consent-date';
 const VISITOR_KEY = 'portfolio-analytics-visitor';

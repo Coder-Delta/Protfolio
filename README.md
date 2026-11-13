@@ -163,10 +163,10 @@ Create `.env` in the root directory:
 
 ```env
 # Development
-VITE_API_BASE_URL=http://localhost:5000/api
+BACKEND_URL=http://localhost:5000
 
 # Production (during build)
-# VITE_API_BASE_URL=https://api.yourdomain.com/api
+# BACKEND_URL=https://api.yourdomain.com
 ```
 
 ### Backend Environment Variables
@@ -293,7 +293,7 @@ curl -X POST http://localhost:5000/api/contact \
 
 1. Push to GitHub
 2. Connect repository to Vercel
-3. Set environment variable: `VITE_API_BASE_URL=https://api.yourdomain.com/api`
+3. Set environment variable: `BACKEND_URL=https://api.yourdomain.com`
 4. Deploy
 
 ### Backend (Vercel, Heroku, AWS, etc.)

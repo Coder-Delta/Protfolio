@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = `${import.meta.env.BACKEND_URL || 'http://localhost:5000'}/api`;
 
 const getFallbackErrorMessage = (status) => {
   if (status === 400) return 'Some submitted information is invalid. Check the form and try again.';

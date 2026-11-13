@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = `${import.meta.env.BACKEND_URL || 'http://localhost:5000'}/api`;
 const token = ref(sessionStorage.getItem('portfolio-analytics-admin-token') || '');
 const password = ref('');
 const error = ref('');
