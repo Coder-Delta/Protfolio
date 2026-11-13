@@ -1,10 +1,10 @@
 # Ranjit's Portfolio
 
-A modern, professional portfolio website built with Vue 3, Vite, Express.js, and PostgreSQL.
+A modern, professional portfolio website built with Vue 3, Vite, Express.js, and MongoDB Atlas.
 
 ## 🎯 Project Overview
 
-This is a full-stack portfolio application showcasing projects, skills, and experience. The frontend is a Vue 3 SPA with smooth animations, and the backend is a Node.js REST API with PostgreSQL for data persistence.
+This is a full-stack portfolio application showcasing projects, skills, and experience. The frontend is a Vue 3 SPA with smooth animations, and the backend is a Node.js REST API with MongoDB Atlas for data persistence.
 
 ## 📊 Architecture
 
@@ -15,7 +15,7 @@ Vue 3 + Vite (SPA)
         ↓
 REST API (Express.js)
         ↓
-PostgreSQL Database
+MongoDB Atlas
 ```
 
 ## 🛠 Tech Stack
@@ -30,7 +30,7 @@ PostgreSQL Database
 ### Backend
 - **Node.js** - JavaScript runtime
 - **Express.js** - Web framework
-- **PostgreSQL** - Relational database
+- **MongoDB Atlas** - Document database
 - **express-validator** - Input validation
 - **Helmet** - Security headers
 - **CORS** - Cross-origin resource sharing
@@ -57,8 +57,7 @@ Protfolio/
 │   │   ├── projects.js          # Projects endpoints
 │   │   └── contact.js           # Contact endpoints
 │   ├── db/
-│   │   ├── client.js            # PostgreSQL client
-│   │   └── schema.sql           # Database schema
+│   │   └── client.js            # MongoDB connection and indexes
 │   ├── scripts/
 │   │   ├── migrate.js           # Run migrations
 │   │   └── seed.js              # Seed data
@@ -78,7 +77,7 @@ Protfolio/
 ### Prerequisites
 
 - Node.js v20+
-- PostgreSQL 12+
+- MongoDB Atlas cluster
 - npm or bun
 
 ### 1. Setup Frontend
@@ -111,11 +110,12 @@ bun install
 # Copy environment file
 cp .env.example .env
 
-# Configure PostgreSQL in .env
-# DATABASE_URL=postgresql://user:password@localhost:5432/portfolio_db
+# Configure MongoDB Atlas in .env
+# MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/
+# MONGODB_DB_NAME=portfolio
 
-# Run migrations and seed
-npm run migrate:seed
+# Create MongoDB indexes and initialize the project ID counter
+npm run migrate
 
 # Start server
 npm run dev
@@ -141,41 +141,18 @@ See [backend/README.md](backend/README.md) for complete API documentation.
 - `GET /api/health` - Health check
 - `GET /api/projects` - Get all projects
 - `GET /api/projects/:id` - Get single project
+- `POST /api/projects` - Admin-only manual project creation with a Cloudinary banner upload
 - `POST /api/contact` - Submit contact message
 - `POST /api/analytics/session` - Start an opted-in anonymous analytics session
 - `GET /api/analytics/admin/summary` - Authenticated private dashboard data
 
 ## 🗄 Database Setup
 
-### Create Database
-
-```bash
-createdb portfolio_db
-```
-
-### Run Migrations
+Configure MongoDB Atlas and Cloudinary credentials in `backend/.env`, then run:
 
 ```bash
 cd backend
 npm run migrate
-```
-
-### Seed Data
-
-```bash
-npm run seed
-```
-
-### View Data
-
-```bash
-psql portfolio_db
-
-# List all projects
-SELECT * FROM projects ORDER BY featured DESC, display_order ASC;
-
-# List all messages
-SELECT * FROM messages ORDER BY created_at DESC;
 ```
 
 ## 🔧 Configuration
@@ -197,8 +174,14 @@ VITE_API_BASE_URL=http://localhost:5000/api
 Create `backend/.env`:
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/portfolio_db
+# MongoDB Atlas
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/
+MONGODB_DB_NAME=portfolio
+
+# Cloudinary image storage (backend only)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 
 # Server
 PORT=5000
@@ -206,6 +189,15 @@ NODE_ENV=development
 
 # Frontend URL (use https://ranjitbhandary.me in production)
 FRONTEND_URL=http://localhost:5173
+
+# Contact form email notifications (backend only)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-gmail-app-password
+CONTACT_EMAIL_FROM=Portfolio Contact <your-email@gmail.com>
+CONTACT_EMAIL_TO=ranjitbhandary15@gmail.com
 
 # Private analytics dashboard (backend only; never add these to VITE_ variables)
 ANALYTICS_ADMIN_PASSWORD=use-a-long-unique-password
@@ -219,7 +211,7 @@ ANALYTICS_RETENTION_DAYS=365
 
 The portfolio contains a self-contained analytics module. It is opt-in: visitors see a clear notice, can decline, and can later change their preference at `/privacy-analytics`. With permission, the browser creates a random UUID stored locally and sends small background requests. It never sends contact-form data to analytics, and does not use fingerprinting.
 
-The server stores the random visitor ID, consent version, session/page timing, project IDs, referrer category, UTM fields, coarse device/browser/operating-system labels, screen-size buckets, and coarse location headers supplied by the deployment provider. It receives the IP address only from Express's trusted request chain (never from the frontend), stores it only when consent is registered, and automatically clears it after `ANALYTICS_IP_RETENTION_DAYS` (30 by default). Raw user-agent strings are never written to PostgreSQL. Location remains `Unknown` when the host does not supply a coarse location header.
+The server stores the random visitor ID, consent version, session/page timing, project IDs, referrer category, UTM fields, coarse device/browser/operating-system labels, screen-size buckets, and coarse location headers supplied by the deployment provider. It receives the IP address only from Express's trusted request chain (never from the frontend), stores it only when consent is registered, and automatically clears it after `ANALYTICS_IP_RETENTION_DAYS` (30 by default). Raw user-agent strings are never stored. Location remains `Unknown` when the host does not supply a coarse location header.
 
 Open `/analytics` to sign in to the private dashboard. Configure both backend analytics secrets before deploying. The dashboard token is held in `sessionStorage`, expires after eight hours, and all dashboard data routes require a valid bearer token.
 
@@ -238,7 +230,7 @@ The dashboard provides today/7/30/90-day and custom-date filters for unique/new/
 ### Current Features
 - ✅ Home page with collapsible about sections
 - ✅ Projects page with pagination (4 items per page)
-- ✅ Project cards with GitHub preview images
+- ✅ Manually managed project cards with Cloudinary-hosted banners
 - ✅ Smooth page transitions
 - ✅ Social media links (GitHub, LinkedIn, Hashnode, Email)
 - ✅ Responsive design (mobile, tablet, desktop)
@@ -247,7 +239,7 @@ The dashboard provides today/7/30/90-day and custom-date filters for unique/new/
 
 ### Backend Features
 - ✅ REST API with Express.js
-- ✅ PostgreSQL database
+- ✅ MongoDB Atlas database
 - ✅ Input validation
 - ✅ CORS configuration
 - ✅ Rate limiting
@@ -307,7 +299,7 @@ curl -X POST http://localhost:5000/api/contact \
 ### Backend (Vercel, Heroku, AWS, etc.)
 
 1. Set environment variables:
-   - `DATABASE_URL` - Production PostgreSQL connection
+   - `MONGODB_URI` and `MONGODB_DB_NAME` - MongoDB Atlas connection and database
    - `NODE_ENV=production`
    - `FRONTEND_URL=https://ranjitbhandary.me`
 
@@ -326,13 +318,13 @@ Backend automatically configures CORS based on environment:
 - [Backend API Documentation](backend/README.md)
 - [Vue.js Documentation](https://vuejs.org/)
 - [Express.js Guide](https://expressjs.com/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [MongoDB Atlas Documentation](https://www.mongodb.com/docs/atlas/)
 - [Vite Guide](https://vitejs.dev/)
 
 ## 🔐 Security
 
 - ✅ Environment variables for sensitive data
-- ✅ Parameterized queries (no SQL injection)
+- ✅ MongoDB driver query objects
 - ✅ Input validation and sanitization
 - ✅ CORS restrictions
 - ✅ Rate limiting
@@ -364,7 +356,7 @@ Ranjit Bhandary © 2024
 
 ### New Features Added
 - Backend REST API
-- PostgreSQL database
+- MongoDB Atlas database
 - API service layer
 - Loading/error states
 - Production-ready setup

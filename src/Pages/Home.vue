@@ -21,9 +21,11 @@ const submitContact = async () => {
     contactMessage.value = '';
     try {
         const result = await contactAPI.submit(contactForm);
-        contactStatus.value = 'success';
+        contactStatus.value = result.data?.notificationStatus === 'failed' ? 'warning' : 'success';
         contactMessage.value = result.message || 'Thanks — your message has been sent.';
-        Object.assign(contactForm, { name: '', email: '', subject: '', message: '' });
+        if (result.data?.notificationStatus !== 'failed') {
+            Object.assign(contactForm, { name: '', email: '', subject: '', message: '' });
+        }
     } catch (error) {
         contactStatus.value = 'error';
         contactMessage.value = error.message || 'Your message could not be sent. Please try again.';
@@ -45,7 +47,7 @@ const submitContact = async () => {
                                 I turn ideas into practical solutions, finding opportunities
                                 and building products with purpose.
                             </p>
-                            <a href="https://zolora.co.in" target="_blank" rel="noopener noreferrer" class="section-link">Go to Zolora →</a>
+                            <a href="https://www.enrg.co.in" target="_blank" rel="noopener noreferrer" class="section-link">Go to Enrg →</a>
                         </div>
                     </transition>
                 </div>
@@ -156,6 +158,10 @@ main {
     outline-offset: 5px;
 }
 
+.nav-label:focus {
+    box-shadow: none;
+}
+
 .nav-label::after {
     content: '';
     position: absolute;
@@ -189,9 +195,16 @@ main {
 }
 
 .contact-form {
+    --pico-form-element-background-color: rgba(255, 255, 255, 0.9);
+    --pico-form-element-color: #24323c;
+    --pico-form-element-placeholder-color: #61727c;
+    --pico-form-element-border-color: #71818a;
+    --pico-form-element-active-background-color: #fff;
+    --pico-form-element-focus-color: #126b68;
     max-width: 520px;
     margin: 0 auto;
     padding: 1rem;
+    color-scheme: light;
     text-align: left;
 }
 
@@ -205,13 +218,20 @@ main {
 
 .contact-form label { display: block; margin: 0.75rem 0; }
 .contact-form input, .contact-form textarea {
+    box-sizing: border-box;
     width: 100%; margin-top: 0.35rem; padding: 0.65rem;
     border: 1px solid #1a1a1a; border-radius: 4px; background: rgba(255,255,255,.72);
+    color: #24323c;
+}
+.contact-form input::placeholder,
+.contact-form textarea::placeholder {
+    color: #61727c;
 }
 .contact-form textarea { resize: vertical; }
 .section-link:disabled { cursor: wait; opacity: .65; }
 .form-status { margin-top: 1rem; }
 .form-status.success { color: #176b3a; }
+.form-status.warning { color: #8a5700; }
 .form-status.error { color: #9b1c1c; }
 
 .section-link {
@@ -384,6 +404,16 @@ main {
 
     .section-link:active::before {
         left: 0;
+    }
+
+    .contact-form {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .contact-form input,
+    .contact-form textarea,
+    .section-link {
+        min-height: 44px;
     }
 }
 

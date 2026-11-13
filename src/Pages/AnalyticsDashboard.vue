@@ -61,5 +61,82 @@ export default { components: { DataList: { props: ['title', 'items'], methods: {
 </script>
 
 <style scoped>
-.analytics-page { min-height: 100vh; padding: 2rem; background: #f5f5f2; color: #171717; }.login-card, .dashboard { max-width: 1200px; margin: 0 auto; }.login-card { max-width: 420px; margin-top: 12vh; padding: 2rem; background: #fff; border: 1px solid #ddd; border-radius: 12px; }.login-card form { display: grid; gap: 1rem; }.login-card input { margin-top: .35rem; }.dashboard header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }.dashboard h1 { margin: 0; }.dashboard h2 { font-size: 1rem; margin-top: 0; }.filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1.5rem 0; }.filters label { margin: 0; font-size: .8rem; }.filters input { width: auto; margin: 0 .15rem; padding: .35rem; }.filters button, .secondary { padding: .45rem .75rem; }.filters .active { background: #171717; border-color: #171717; color: #fff; }.metrics { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 1rem; }.metrics article, .charts article { padding: 1rem; background: #fff; border: 1px solid #ddd; border-radius: 10px; }.metrics small { display: block; color: #666; }.metrics strong { display: block; margin-top: .3rem; font-size: 1.8rem; }.charts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem; margin-top: 1rem; }.wide { grid-column: span 3; }.trend { height: 150px; display: flex; align-items: end; gap: .5rem; }.bar-item { display: grid; flex: 1; height: 100%; align-items: end; gap: .25rem; text-align: center; }.bar { min-height: 2px; display: block; background: #171717; }.bar-item small { font-size: .65rem; }.charts :deep(ul) { padding: 0; margin: 0; list-style: none; }.charts :deep(li) { position: relative; display: grid; grid-template-columns: 1fr auto; gap: .5rem; padding: .35rem 0 .55rem; overflow: hidden; }.charts :deep(li i) { position: absolute; bottom: .15rem; left: 0; height: 2px; background: #777; }.muted { color: #666; }.error { color: #b00020; } @media (max-width: 850px) { .metrics { grid-template-columns: repeat(2, 1fr); }.charts { grid-template-columns: 1fr; }.wide { grid-column: span 1; } } @media (max-width: 500px) { .analytics-page { padding: 1rem; }.dashboard header { flex-direction: column; }.metrics { grid-template-columns: 1fr; } }
+.analytics-page {
+    --pico-color: #23313b;
+    --pico-muted-color: #52636f;
+    --pico-h1-color: #172a35;
+    --pico-h2-color: #233944;
+    --pico-primary: #126b68;
+    --pico-primary-background: #126b68;
+    --pico-primary-border: #126b68;
+    --pico-primary-hover: #0e5552;
+    --pico-primary-hover-background: #0e5552;
+    --pico-primary-hover-border: #0e5552;
+    --pico-primary-focus: rgba(18, 107, 104, 0.25);
+    --pico-primary-inverse: #fff;
+    --pico-form-element-background-color: #fff;
+    --pico-form-element-color: #23313b;
+    --pico-form-element-placeholder-color: #647681;
+    --pico-form-element-border-color: #bdc9ce;
+    --pico-form-element-active-background-color: #fff;
+    --pico-form-element-focus-color: #126b68;
+    min-height: 100vh;
+    padding: 2rem;
+    background: #f3f7f6;
+    color: #23313b;
+    color-scheme: light;
+}
+
+.login-card,
+.dashboard { max-width: 1200px; margin: 0 auto; }
+.login-card { max-width: 420px; margin-top: 12vh; padding: 2rem; background: #fff; border: 1px solid #d5dfdf; border-radius: 12px; }
+.login-card h1 { color: #172a35; }
+.login-card p,
+.login-card label,
+.dashboard header p,
+.filters label { color: #52636f; }
+.login-card form { display: grid; gap: 1rem; }
+.login-card input { margin-top: .35rem; }
+.dashboard header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }
+.dashboard h1 { margin: 0; color: #172a35; }
+.dashboard h2 { font-size: 1rem; margin-top: 0; color: #233944; }
+.filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1.5rem 0; }
+.filters label { margin: 0; font-size: .8rem; }
+.filters input { width: auto; margin: 0 .15rem; padding: .35rem; }
+.filters button, .secondary { padding: .45rem .75rem; }
+.filters .active { background: #126b68; border-color: #126b68; color: #fff; }
+.metrics { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 1rem; }
+.metrics article, .charts article { min-width: 0; padding: 1rem; background: #fff; border: 1px solid #d5dfdf; border-radius: 10px; }
+.metrics small { display: block; color: #52636f; }
+.metrics strong { display: block; margin-top: .3rem; color: #172a35; font-size: clamp(1.25rem, 3vw, 1.8rem); overflow-wrap: anywhere; }
+.charts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem; margin-top: 1rem; }
+.wide { grid-column: span 3; }
+.trend { height: 150px; display: flex; align-items: end; gap: .5rem; overflow-x: auto; }
+.bar-item { display: grid; flex: 1 0 20px; height: 100%; align-items: end; gap: .25rem; text-align: center; }
+.bar { min-height: 2px; display: block; background: #126b68; }
+.bar-item small { color: #52636f; font-size: .65rem; }
+.charts :deep(ul) { padding: 0; margin: 0; list-style: none; }
+.charts :deep(li) { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; padding: .35rem 0 .55rem; overflow: hidden; }
+.charts :deep(li span) { min-width: 0; overflow-wrap: anywhere; }
+.charts :deep(li i) { position: absolute; bottom: .15rem; left: 0; height: 2px; background: #126b68; }
+.muted { color: #52636f; }
+.error { color: #a32632; }
+@media (max-width: 850px) { .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }.charts { grid-template-columns: minmax(0,1fr); }.wide { grid-column: span 1; } }
+@media (max-width: 600px) {
+    .analytics-page { padding: 1rem; }
+    .login-card { margin-top: 8vh; padding: 1.25rem; }
+    .dashboard header { flex-direction: column; }
+    .dashboard header button { min-height: 44px; }
+    .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .65rem; }
+    .metrics article, .charts article { padding: .8rem; }
+    .filters { align-items: stretch; }
+    .filters button { min-height: 44px; }
+    .filters label { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .5rem; width: 100%; }
+    .filters label input { width: 100%; min-width: 0; margin: 0; }
+}
+@media (max-width: 360px) {
+    .analytics-page { padding: .75rem; }
+    .metrics { gap: .5rem; }
+    .metrics article, .charts article { padding: .65rem; }
+}
 </style>

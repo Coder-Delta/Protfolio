@@ -183,12 +183,29 @@ h1 {
         padding: 1.2rem 1.5rem;
     }
 
+    nav ul:last-child {
+        gap: 0.25rem;
+    }
+
+    nav ul:last-child li {
+        flex: 0 0 40px;
+        width: 40px;
+    }
+
+    nav ul:last-child a {
+        box-sizing: border-box;
+        width: 40px;
+        height: 40px;
+        padding: 0.35rem;
+    }
+
     .logo {
         font-size: 1.5rem;
     }
 
     .nav-icon {
         height: 28px;
+        width: 28px;
     }
 
     nav ul:last-child {
@@ -232,16 +249,27 @@ h1 {
     }
 
     nav ul:last-child {
-        gap: 0.2rem;
+        flex: 0 0 auto;
+        gap: 0.1rem;
+    }
+
+    nav ul:last-child li {
+        flex: 0 0 36px;
+        width: 36px;
     }
 
     nav ul:last-child a {
-        padding: 0.4rem;
+        box-sizing: border-box;
+        width: 36px;
+        height: 40px;
+        padding: 0;
         touch-action: manipulation;
     }
 
     .nav-icon {
-        height: 24px;
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
         opacity: 0.6;
     }
 
@@ -268,13 +296,21 @@ h1 {
     .nav-icon {
         height: 22px;
     }
+}
 
+@media (max-width: 360px) {
     nav ul:last-child {
-        gap: 0.1rem;
+        gap: 0;
+    }
+
+    nav ul:last-child li,
+    nav ul:last-child a {
+        flex-basis: 28px;
+        width: 28px;
     }
 
     nav ul:last-child a {
-        padding: 0.3rem;
+        height: 36px;
     }
 }
 

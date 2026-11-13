@@ -8,6 +8,17 @@ import '@picocss/pico';
 const projects = ref([]);
 const isLoading = ref(false);
 const error = ref(null);
+const adminToken = ref(sessionStorage.getItem('portfolio-analytics-admin-token') || '');
+const showProjectForm = ref(false);
+const isSubmittingProject = ref(false);
+const projectFormError = ref('');
+const projectFormMessage = ref('');
+const projectForm = reactive({
+    title: '',
+    description: '',
+    banner: null,
+    liveLink: '',
+});
 
 const itemsPerPage = 4;
 const currentPage = ref(1);
@@ -16,16 +27,10 @@ const imageState = reactive({});
 const totalPages = computed(() => Math.ceil(projects.value.length / itemsPerPage));
 const paginatedProjects = computed(() => {
     const sortedProjects = [...projects.value].sort((left, right) => {
-        const starDifference = (right.github_stars || 0) - (left.github_stars || 0);
-        if (starDifference !== 0) {
-            return starDifference;
+        if (left.featured !== right.featured) {
+            return left.featured ? -1 : 1;
         }
-
-        if (left.featured === right.featured) {
-            return (left.display_order || 0) - (right.display_order || 0);
-        }
-
-        return left.featured ? -1 : 1;
+        return (left.display_order || 0) - (right.display_order || 0);
     });
     const start = (currentPage.value - 1) * itemsPerPage;
     return sortedProjects.slice(start, start + itemsPerPage);
@@ -57,6 +62,29 @@ const trackProjectView = (project) => {
     analytics.trackProject(project);
 };
 
+const submitProject = async () => {
+    isSubmittingProject.value = true;
+    projectFormError.value = '';
+    projectFormMessage.value = '';
+
+    try {
+        await projectsAPI.create(projectForm, adminToken.value);
+        projectFormMessage.value = 'Project added successfully.';
+        Object.assign(projectForm, { title: '', description: '', banner: null, liveLink: '' });
+        showProjectForm.value = false;
+        await fetchProjects();
+        if (totalPages.value) currentPage.value = totalPages.value;
+    } catch (err) {
+        projectFormError.value = err.message || 'Failed to add project.';
+        if (err.message === 'Authentication required.') {
+            adminToken.value = '';
+            sessionStorage.removeItem('portfolio-analytics-admin-token');
+        }
+    } finally {
+        isSubmittingProject.value = false;
+    }
+};
+
 // Fetch projects from API
 const fetchProjects = async () => {
     isLoading.value = true;
@@ -72,7 +100,7 @@ const fetchProjects = async () => {
         });
     } catch (err) {
         console.error('Failed to load projects:', err);
-        error.value = 'Failed to load projects. Please try again later.';
+        error.value = err.message || 'Projects could not be loaded. Please try again later.';
     } finally {
         isLoading.value = false;
     }
@@ -89,6 +117,46 @@ onMounted(() => {
         <section class="container projects-section">
             <div class="content-wrapper">
                 <h1 class="page-title">PROJECTS</h1>
+
+                <section v-if="adminToken" class="project-admin-panel" aria-label="Project administration">
+                    <button
+                        type="button"
+                        class="project-admin-button"
+                        @click="showProjectForm = !showProjectForm; projectFormError = ''; projectFormMessage = ''"
+                    >
+                        {{ showProjectForm ? 'Cancel' : 'Add project' }}
+                    </button>
+                    <form v-if="showProjectForm" class="project-admin-form" @submit.prevent="submitProject">
+                        <h2>Add a project</h2>
+                        <label>
+                            Project title
+                            <input v-model="projectForm.title" type="text" minlength="2" maxlength="255" required />
+                        </label>
+                        <label>
+                            Project bio / description
+                            <textarea v-model="projectForm.description" minlength="10" maxlength="5000" rows="4" required></textarea>
+                        </label>
+                        <label>
+                            Project banner image
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/avif"
+                                required
+                                @change="projectForm.banner = $event.target.files?.[0] || null"
+                            />
+                            <small>JPEG, PNG, WebP, or AVIF; maximum 5 MB. Stored securely in Cloudinary.</small>
+                        </label>
+                        <label>
+                            Live project URL
+                            <input v-model="projectForm.liveLink" type="url" maxlength="2048" placeholder="https://example.com" required />
+                        </label>
+                        <p v-if="projectFormError" class="project-admin-error" role="alert">{{ projectFormError }}</p>
+                        <button type="submit" class="project-admin-button" :disabled="isSubmittingProject">
+                            {{ isSubmittingProject ? 'Adding…' : 'Save project' }}
+                        </button>
+                    </form>
+                    <p v-if="projectFormMessage" class="project-admin-success" role="status">{{ projectFormMessage }}</p>
+                </section>
 
                 <!-- Loading State -->
                 <div v-if="isLoading" class="loading-state">
@@ -130,7 +198,7 @@ onMounted(() => {
 
                             <div v-if="imageState[project.title].error" class="image-fallback">
                                 <span>Preview unavailable</span>
-                                <small>Open the repository to view details.</small>
+                                <small>Open the project to view details.</small>
                             </div>
 
                             <img
@@ -239,6 +307,87 @@ main {
     color: #1a1a1a;
     text-align: center;
     animation: slideIn 0.6s ease-out backwards;
+}
+
+.project-admin-panel {
+    max-width: 720px;
+    margin: -1.5rem auto 2.5rem;
+    text-align: center;
+}
+
+.project-admin-form {
+    --pico-color: #24323c;
+    --pico-muted-color: #52636f;
+    --pico-h2-color: #172a35;
+    --pico-form-element-background-color: #fff;
+    --pico-form-element-color: #24323c;
+    --pico-form-element-placeholder-color: #61727c;
+    --pico-form-element-border-color: #8999a2;
+    --pico-form-element-active-background-color: #fff;
+    --pico-form-element-focus-color: #126b68;
+    margin-top: 1rem;
+    padding: 1.5rem;
+    border: 1px solid #1a1a1a;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #24323c;
+    color-scheme: light;
+    text-align: left;
+}
+
+.project-admin-form h2 {
+    margin-bottom: 1rem;
+    color: #172a35;
+    text-align: center;
+}
+
+.project-admin-form label {
+    display: block;
+    margin-bottom: 1rem;
+    color: #34434d;
+    font-family: 'Courier New', Courier, monospace;
+    text-align: left;
+}
+
+.project-admin-form input,
+.project-admin-form textarea {
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: 0.4rem;
+    background: #fff;
+    color: #24323c;
+}
+
+.project-admin-form input::placeholder,
+.project-admin-form textarea::placeholder,
+.project-admin-form small {
+    color: #61727c;
+}
+
+.project-admin-form input[type="file"]::file-selector-button {
+    color: #fff;
+    background: #126b68;
+    border-color: #126b68;
+}
+
+.project-admin-button {
+    border: 1px solid #1a1a1a;
+    background: #1a1a1a;
+    color: #fff;
+}
+
+.project-admin-button:disabled {
+    opacity: 0.6;
+}
+
+.project-admin-error {
+    color: #b42318;
+}
+
+.project-admin-success {
+    margin-top: 0.75rem;
+    color: #176b3a;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 /* Loading, Error, Empty States */
@@ -620,6 +769,7 @@ main::-webkit-scrollbar-thumb:hover {
         font-size: 0.75rem;
         padding: 0.5rem 1.2rem;
         touch-action: manipulation;
+        min-height: 44px;
     }
 
     .project-link:active {
@@ -638,6 +788,11 @@ main::-webkit-scrollbar-thumb:hover {
 
     .pagination-button {
         padding: 0.5rem 0.9rem;
+        min-height: 44px;
+    }
+
+    .project-admin-form {
+        padding: 1rem;
     }
 
     /* Hide scrollbar on mobile */

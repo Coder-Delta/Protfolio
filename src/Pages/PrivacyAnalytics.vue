@@ -32,5 +32,6 @@ const updatePreference = (allowed) => analytics.setConsent(allowed);
 </template>
 
 <style scoped>
-main { min-height: 100vh; background: #f5f5f2; }.privacy { max-width: 820px; padding: 2rem 1.5rem 4rem; }.privacy h1 { margin-top: 1rem; }.privacy h2 { margin-top: 2rem; font-size: 1.25rem; }.privacy p { line-height: 1.7; }.actions { display: flex; flex-wrap: wrap; gap: .75rem; }.actions button { margin: 0; }.secondary { background: #fff; color: #222; border-color: #555; }
+main { min-height: 100vh; background: #f5f5f2; }.privacy { max-width: 820px; padding: 2rem 1.5rem 4rem; }.privacy h1 { margin-top: 1rem; overflow-wrap: anywhere; }.privacy h2 { margin-top: 2rem; font-size: 1.25rem; }.privacy p { line-height: 1.7; overflow-wrap: anywhere; }.actions { display: flex; flex-wrap: wrap; gap: .75rem; }.actions button { min-height: 44px; margin: 0; }.secondary { background: #fff; color: #222; border-color: #555; }
+@media (max-width: 600px) { .privacy { padding: 1.25rem 1rem 3rem; }.privacy h1 { font-size: clamp(1.6rem, 7vw, 2rem); }.privacy h2 { font-size: 1.15rem; } }
 </style>
